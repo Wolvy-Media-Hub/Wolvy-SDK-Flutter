@@ -61,6 +61,6 @@ class WolvyPlayerPlugin : FlutterPlugin, ActivityAware, MethodChannel.MethodCall
     companion object {
         const val CHANNEL = "net.wolvy.player"
         const val VIEW_TYPE = "net.wolvy.player/view"
-        const val VERSION = "0.1.0"
+        const val VERSION = "0.2.0"
     }
 }

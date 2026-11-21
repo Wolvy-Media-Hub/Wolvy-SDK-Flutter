@@ -31,3 +31,22 @@ jobs:
       - name: Build the example
         working-directory: example
         run: flutter pub get && flutter analyze && flutter build apk --release
+
+  ios:
+    name: iOS plugin and the example (simulator)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: The Wolvy iOS SDK copy matches CORE_VERSION
+        run: |
+          commit=$(awk '{print $3}' ios/wolvy_player/CORE_VERSION)
+          git clone --quiet https://github.com/Wolvy-Media-Hub/Wolvy-SDK-iOS /tmp/core
+          git -C /tmp/core checkout --quiet "$commit"
+          diff -r /tmp/core/Sources/WolvyPlayer ios/wolvy_player/Sources/wolvy_player/WolvyCore
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Build the example for the simulator
+        working-directory: example
+        run: flutter pub get && flutter build ios --simulator --debug
