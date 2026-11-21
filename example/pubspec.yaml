@@ -1,6 +1,6 @@
 name: wolvy_player_example
 description: "The Wolvy Flutter SDK's example app."
-version: 0.2.0+1
+version: 0.3.0+1
 publish_to: 'none'
 
 environment:

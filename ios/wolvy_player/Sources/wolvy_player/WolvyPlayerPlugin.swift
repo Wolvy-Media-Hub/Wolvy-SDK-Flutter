@@ -9,7 +9,7 @@ public final class WolvyPlayerPlugin: NSObject, FlutterPlugin {
     static let channelName = "net.wolvy.player"
     static let viewType = "net.wolvy.player/view"
     /// This package's version, sent to Wolvy in X-Wolvy-SDK.
-    static let version = "0.2.0"
+    static let version = "0.3.0"
 
     private let messenger: FlutterBinaryMessenger
     private var players: [Int: WolvyFlutterPlayer] = [:]

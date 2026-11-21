@@ -102,6 +102,7 @@ class WolvyState {
     required this.muted,
     required this.volume,
     required this.playbackRate,
+    this.attested = false,
   });
   final double currentTime;
   final double duration;
@@ -110,6 +111,9 @@ class WolvyState {
   final double volume;
   final double playbackRate;
 
+  /// The app proved itself to Wolvy for this video (app protection): it plays like Wolvy Player.
+  final bool attested;
+
   static WolvyState fromMap(Map<dynamic, dynamic> m) => WolvyState(
         currentTime: _d(m['currentTime']),
         duration: _d(m['duration']),
@@ -117,6 +121,7 @@ class WolvyState {
         muted: m['muted'] == true,
         volume: _d(m['volume']),
         playbackRate: _d(m['playbackRate'], 1),
+        attested: m['attested'] == true,
       );
 }
 

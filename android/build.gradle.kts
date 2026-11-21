@@ -79,5 +79,5 @@ dependencies {
 }
 
 dependencies {
-    implementation("net.wolvy:wolvy-player:0.1.0")
+    implementation("net.wolvy:wolvy-player:0.2.0")
 }

@@ -81,7 +81,7 @@ void main() {
             'getQualities' => {'available': [1080, 720], 'selected': null, 'playing': 720},
             'getProgress' => {'percent': 33.3, 'seconds': 40, 'duration': 120.0},
             'getCaptions' => {'available': [{'language': 'ar', 'label': 'Arabic'}], 'active': 'ar'},
-            'getState' => {'currentTime': 3.0, 'duration': 120.0, 'paused': false, 'muted': true, 'volume': 0.5, 'playbackRate': 1.5},
+            'getState' => {'currentTime': 3.0, 'duration': 120.0, 'paused': false, 'muted': true, 'volume': 0.5, 'playbackRate': 1.5, 'attested': true},
             _ => null,
           };
       expect(await c.seek(12.5), 12.5);
@@ -94,6 +94,8 @@ void main() {
       final s = await c.getState();
       expect(s.muted, isTrue);
       expect(s.playbackRate, 1.5);
+      expect(s.attested, isTrue);
+      expect(WolvyState.fromMap({'currentTime': 0}).attested, isFalse); // an older native side sends no attested
       await c.setQuality(null);
       await c.setCaptions('ar');
       await c.setPlaybackRate(1.25);

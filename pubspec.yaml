@@ -1,6 +1,6 @@
 name: wolvy_player
 description: "Plays Wolvy's DRM-protected video in Flutter apps: Widevine on Android, FairPlay on iOS, the viewer watermark, screen-capture protection and the web Player API's methods and events."
-version: 0.2.0
+version: 0.3.0
 homepage: https://docs.wolvy.net/
 repository: https://github.com/Wolvy-Media-Hub/Wolvy-SDK-Flutter
 issue_tracker: https://github.com/Wolvy-Media-Hub/Wolvy-SDK-Flutter/issues
