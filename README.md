@@ -1,6 +1,6 @@
 # Wolvy Flutter SDK (`wolvy_player`)
 
-**0.1.0, ready for pub.dev (publisher wolvy.net; not released yet).** Android only in this version; iOS comes with the iOS SDK.
+**0.1.0.** Android only in this version; iOS comes with the iOS SDK.
 
 Plays Wolvy's DRM-protected video in Flutter apps with the viewer watermark, screen-capture protection and the account's quality rules, and the same methods and events as Wolvy's web Player API. Built on the [Wolvy Android SDK](https://github.com/Wolvy-Media-Hub/Wolvy-SDK-Android): this package holds no playback logic of its own.
 
@@ -9,13 +9,11 @@ Plays Wolvy's DRM-protected video in Flutter apps with the viewer watermark, scr
 
 ## Install
 
-Once released (not yet), with the Wolvy Android SDK on Maven Central:
-
 ```bash
 flutter pub add wolvy_player
 ```
 
-`minSdk` 24. Add your app's package name to Allowed apps.
+The Wolvy Android SDK (`net.wolvy:wolvy-player`) comes from Maven Central with it. `minSdk` 24. Add your app's package name to Allowed apps.
 
 ## Use
 
@@ -68,13 +66,13 @@ Errors are `WolvyError` with the web codes (`network_error`, `playback_error`, `
 
 ## Develop
 
-Until the Android SDK is on Maven Central, build it into your local Maven repository first and set `wolvy.useMavenLocal=true` in the app's `android/gradle.properties` (the example does):
+Run `flutter test`, and in `example/`: `flutter build apk --release`. Add `net.wolvy.player.flutter.example` to a test account's Allowed apps. `spike/` (on its own branch) is the phase 3 step 1 test app.
+
+To try changes to the Wolvy Android SDK, build it into your local Maven repository and set `wolvy.useMavenLocal=true` in the app's `android/gradle.properties`:
 
 ```bash
 git clone https://github.com/Wolvy-Media-Hub/Wolvy-SDK-Android && cd Wolvy-SDK-Android && ./gradlew :wolvy-player:publishToMavenLocal
 ```
-
-Then `flutter test`, and in `example/`: `flutter build apk --release`. Add `net.wolvy.player.flutter.example` to a test account's Allowed apps. `spike/` (on its own branch) is the phase 3 step 1 test app.
 
 ## Licence
 

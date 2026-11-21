@@ -2,7 +2,7 @@ allprojects {
     repositories {
         google()
         mavenCentral()
-        // The Wolvy Android SDK from publishToMavenLocal while it is unreleased (gradle.properties).
+        // A local Wolvy Android SDK (publishToMavenLocal) only with wolvy.useMavenLocal=true (gradle.properties).
         if (providers.gradleProperty("wolvy.useMavenLocal").orNull == "true") mavenLocal()
     }
 }
