@@ -1,11 +1,21 @@
 # Wolvy Flutter SDK (`wolvy_player`)
 
-**In development (0.1.0). Not published yet** (pub.dev, publisher wolvy.net). Android only in this version; iOS comes with the iOS SDK.
+**0.1.0, ready for pub.dev (publisher wolvy.net; not released yet).** Android only in this version; iOS comes with the iOS SDK.
 
 Plays Wolvy's DRM-protected video in Flutter apps with the viewer watermark, screen-capture protection and the account's quality rules, and the same methods and events as Wolvy's web Player API. Built on the [Wolvy Android SDK](https://github.com/Wolvy-Media-Hub/Wolvy-SDK-Android): this package holds no playback logic of its own.
 
 - Your app's package name must be on your account's **Allowed apps** (Wolvy dashboard → Settings → Protection).
 - The viewer token is signed on **your server** (`POST /v1/videos/{id}/playback-tokens`, or the [PHP](https://github.com/Wolvy-Media-Hub/Wolvy-SDK-PHP) and [Node.js](https://github.com/Wolvy-Media-Hub/Wolvy-SDK-Node) SDKs). Keep it short-lived and give a `tokenProvider`.
+
+## Install
+
+Once released (not yet), with the Wolvy Android SDK on Maven Central:
+
+```bash
+flutter pub add wolvy_player
+```
+
+`minSdk` 24. Add your app's package name to Allowed apps.
 
 ## Use
 
@@ -58,7 +68,7 @@ Errors are `WolvyError` with the web codes (`network_error`, `playback_error`, `
 
 ## Develop
 
-Until the Android SDK is on Maven Central, build it into your local Maven repository first, and keep `mavenLocal()` in the app's repositories (the example does):
+Until the Android SDK is on Maven Central, build it into your local Maven repository first and set `wolvy.useMavenLocal=true` in the app's `android/gradle.properties` (the example does):
 
 ```bash
 git clone https://github.com/Wolvy-Media-Hub/Wolvy-SDK-Android && cd Wolvy-SDK-Android && ./gradlew :wolvy-player:publishToMavenLocal
