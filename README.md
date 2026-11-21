@@ -1,16 +1,70 @@
-# Wolvy Flutter SDK
+# Wolvy Flutter SDK (`wolvy_player`)
 
-**In development. Nothing is published yet.**
+**In development (0.1.0). Not published yet** (pub.dev, publisher wolvy.net). Android only in this version; iOS comes with the iOS SDK.
 
-A Flutter widget and controller for Wolvy video, built on the native Android and iOS SDKs.
+Plays Wolvy's DRM-protected video in Flutter apps with the viewer watermark, screen-capture protection and the account's quality rules, and the same methods and events as Wolvy's web Player API. Built on the [Wolvy Android SDK](https://github.com/Wolvy-Media-Hub/Wolvy-SDK-Android): this package holds no playback logic of its own.
 
-- Plays Wolvy's DRM-protected video (Widevine on Android, FairPlay on iOS) in your own app, with the per-viewer watermark and screen-capture protection.
-- Takes the same three values as the embed URL: the video id, your account id, and a viewer token signed on **your server** (`POST /v1/videos/{id}/playback-tokens` on the Developer API, or the server SDKs). Nothing secret is ever built into the app.
-- Your app must be on your account's **Allowed apps** list (Wolvy dashboard → Settings → Protection).
+- Your app's package name must be on your account's **Allowed apps** (Wolvy dashboard → Settings → Protection).
+- The viewer token is signed on **your server** (`POST /v1/videos/{id}/playback-tokens`, or the [PHP](https://github.com/Wolvy-Media-Hub/Wolvy-SDK-PHP) and [Node.js](https://github.com/Wolvy-Media-Hub/Wolvy-SDK-Node) SDKs). Keep it short-lived and give a `tokenProvider`.
 
-Will be published to: pub.dev (`wolvy_player`, publisher wolvy.net). Plan and progress: https://docs.wolvy.net (the SDK pages appear when it ships).
+## Use
 
-Other Wolvy SDKs: [web](https://github.com/Wolvy-Media-Hub/Wolvy-SDK) · [PHP](https://github.com/Wolvy-Media-Hub/Wolvy-SDK-PHP) · [Node.js](https://github.com/Wolvy-Media-Hub/Wolvy-SDK-Node) · [Android](https://github.com/Wolvy-Media-Hub/Wolvy-SDK-Android) · [iOS](https://github.com/Wolvy-Media-Hub/Wolvy-SDK-iOS) · [Flutter](https://github.com/Wolvy-Media-Hub/Wolvy-SDK-Flutter) · [React Native](https://github.com/Wolvy-Media-Hub/Wolvy-SDK-React-Native)
+```dart
+final player = WolvyPlayerController();
+
+player.events.listen((e) {
+  switch (e) {
+    case WolvyProgressEvent(:final progress) when progress.percent >= 90:
+      markLessonComplete();               // seconds actually watched, each once
+    case WolvyErrorEvent(:final error):
+      log('${error.code.value} ${error.reason}');
+    default:
+  }
+});
+
+// In build():
+WolvyPlayerView(controller: player)
+
+// Then:
+await player.load(WolvyVideo(
+  videoId: videoId,
+  accountId: accountId,
+  viewerToken: tokenFromYourServer,
+  tokenProvider: (video) => myServer.freshViewerToken(video.videoId),
+));
+```
+
+`WolvyVideo.fromEmbedUrl(url)` reads the three values from the `embed_url` that the playback-tokens call returns.
+
+| Controller | |
+|---|---|
+| `load(video, autoplay: true)` | |
+| `play()`, `pause()`, `seek(seconds)`, `mute()`, `unmute()`, `setVolume(0..1)` | |
+| `setPlaybackRate(rate)` | 0.5, 0.75, 1, 1.25, 1.5 or 2 |
+| `setQuality(height or null)`, `setCaptions(language or null)` | null = automatic / off |
+| `getState()`, `getQualities()`, `getCaptions()`, `getProgress()`, `getVideoInfo()` | |
+| `retry()` | after an error |
+| `events` | `WolvyReadyEvent`, `WolvyPlayEvent`, `WolvyPauseEvent`, `WolvyEndedEvent`, `WolvySeekedEvent`, `WolvyTimeUpdateEvent`, `WolvyProgressEvent`, `WolvyVolumeChangeEvent`, `WolvyRateChangeEvent`, `WolvyQualityChangeEvent`, `WolvyCaptionsChangeEvent`, `WolvyFullscreenChangeEvent`, `WolvyErrorEvent`, `WolvyCaptionCueEvent` |
+
+Errors are `WolvyError` with the web codes (`network_error`, `playback_error`, `device_not_supported`, `not_ready`, `invalid_argument`, `destroyed`, `failed`) and a `reason` (`app_not_allowed`, `viewer_token_required`, `hardware_drm_required`…).
+
+## Good to know
+
+- **Hybrid composition.** `WolvyPlayerView` embeds the native player with hybrid composition, the only way a hardware-protected (Widevine L1) picture shows in Flutter: the default texture layer draws native views into a texture, and a protected picture there is black (tested on phones). Scrolling a page around the player costs a little more on older Android versions.
+- **The controller owns the player.** `WolvyPlayerView` only shows it, so playback goes on when Flutter rebuilds the view in another place (fullscreen, a new layout). Nothing plays until a view is on screen. Call `controller.dispose()` when you are done (it releases the native player).
+- **The whole window is protected** from screenshots and recordings while the player is on screen (FLAG_SECURE), as long as any player view is on it.
+- **Quality** follows Wolvy's licence server: hardware DRM gets every quality, software DRM 480p and below, and nothing at all when the account has App-Only on.
+- **Fullscreen**: the player's button sends `WolvyFullscreenChangeEvent`; your app resizes the view (the example shows how).
+
+## Develop
+
+Until the Android SDK is on Maven Central, build it into your local Maven repository first, and keep `mavenLocal()` in the app's repositories (the example does):
+
+```bash
+git clone https://github.com/Wolvy-Media-Hub/Wolvy-SDK-Android && cd Wolvy-SDK-Android && ./gradlew :wolvy-player:publishToMavenLocal
+```
+
+Then `flutter test`, and in `example/`: `flutter build apk --release`. Add `net.wolvy.player.flutter.example` to a test account's Allowed apps. `spike/` (on its own branch) is the phase 3 step 1 test app.
 
 ## Licence
 
