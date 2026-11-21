@@ -51,7 +51,8 @@ Errors are `WolvyError` with the web codes (`network_error`, `playback_error`, `
 ## Good to know
 
 - **Hybrid composition.** `WolvyPlayerView` embeds the native player with hybrid composition, the only way a hardware-protected (Widevine L1) picture shows in Flutter: the default texture layer draws native views into a texture, and a protected picture there is black (tested on phones). Scrolling a page around the player costs a little more on older Android versions.
-- **The whole window is protected** from screenshots and recordings while the player is on screen (FLAG_SECURE).
+- **The controller owns the player.** `WolvyPlayerView` only shows it, so playback goes on when Flutter rebuilds the view in another place (fullscreen, a new layout). Nothing plays until a view is on screen. Call `controller.dispose()` when you are done (it releases the native player).
+- **The whole window is protected** from screenshots and recordings while the player is on screen (FLAG_SECURE), as long as any player view is on it.
 - **Quality** follows Wolvy's licence server: hardware DRM gets every quality, software DRM 480p and below, and nothing at all when the account has App-Only on.
 - **Fullscreen**: the player's button sends `WolvyFullscreenChangeEvent`; your app resizes the view (the example shows how).
 

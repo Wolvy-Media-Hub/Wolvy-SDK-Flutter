@@ -7,7 +7,8 @@ import 'package:wolvy_player/wolvy_player.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   final messenger = TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
-  const channel = MethodChannel('net.wolvy.player/view_7');
+  const plugin = MethodChannel('net.wolvy.player');
+  const channel = MethodChannel('net.wolvy.player/player_7');
   const codec = StandardMethodCodec();
 
   group('WolvyVideo', () {
@@ -34,32 +35,47 @@ void main() {
 
   group('WolvyPlayerController', () {
     late List<MethodCall> calls;
+    late List<MethodCall> pluginCalls;
     late Object? Function(MethodCall) answer;
 
     setUp(() {
       calls = [];
+      pluginCalls = [];
       answer = (_) => null;
+      messenger.setMockMethodCallHandler(plugin, (call) async {
+        pluginCalls.add(call);
+        return call.method == 'create' ? 7 : null;
+      });
       messenger.setMockMethodCallHandler(channel, (call) async {
         calls.add(call);
         return answer(call);
       });
     });
-    tearDown(() => messenger.setMockMethodCallHandler(channel, null));
+    tearDown(() {
+      messenger.setMockMethodCallHandler(plugin, null);
+      messenger.setMockMethodCallHandler(channel, null);
+    });
 
-    test('commands sent before the view exists wait for it', () async {
+    test('the controller creates its native player first, without waiting for a view', () async {
       final c = WolvyPlayerController();
-      final pending = c.load(WolvyVideo(videoId: 'vid', accountId: 42, viewerToken: 'tok'), autoplay: false);
-      await Future<void>.delayed(Duration.zero);
-      expect(calls, isEmpty);
-      c.attachView(7);
-      await pending;
+      await c.load(WolvyVideo(videoId: 'vid', accountId: 42, viewerToken: 'tok'), autoplay: false);
+      expect(pluginCalls.map((e) => e.method), ['create']);
       expect(calls.single.method, 'load');
       expect(calls.single.arguments,
           {'videoId': 'vid', 'accountId': 42, 'viewerToken': 'tok', 'hasTokenProvider': false, 'autoplay': false});
     });
 
+    test('one native player for the life of the controller (views come and go)', () async {
+      final c = WolvyPlayerController();
+      expect(await c.playerId, 7);
+      expect(await c.playerId, 7);
+      await c.play();
+      await c.pause();
+      expect(pluginCalls.where((e) => e.method == 'create').length, 1);
+    });
+
     test('maps the web API methods and their answers', () async {
-      final c = WolvyPlayerController()..attachView(7);
+      final c = WolvyPlayerController();
       answer = (call) => switch (call.method) {
             'seek' => 12.5,
             'getQualities' => {'available': [1080, 720], 'selected': null, 'playing': 720},
@@ -86,7 +102,7 @@ void main() {
     });
 
     test('native errors become WolvyError with the web codes', () async {
-      final c = WolvyPlayerController()..attachView(7);
+      final c = WolvyPlayerController();
       answer = (_) => throw PlatformException(code: 'not_ready', message: 'not yet', details: {'reason': null});
       await expectLater(c.seek(3), throwsA(isA<WolvyError>().having((e) => e.code, 'code', WolvyErrorCode.notReady)));
       answer = (_) => throw PlatformException(code: 'playback_error', message: 'no', details: {'reason': 'app_not_allowed'});
@@ -102,7 +118,8 @@ void main() {
     }
 
     test('native events arrive typed on the stream', () async {
-      final c = WolvyPlayerController()..attachView(7);
+      final c = WolvyPlayerController();
+      await c.playerId;
       final got = <WolvyEvent>[];
       c.events.listen(got.add);
       await fromNative('event', {'name': 'progress', 'data': {'percent': 90.0, 'seconds': 108, 'duration': 120.0}});
@@ -119,7 +136,7 @@ void main() {
     });
 
     test('the token provider answers the native player', () async {
-      final c = WolvyPlayerController()..attachView(7);
+      final c = WolvyPlayerController();
       final seen = <String>[];
       await c.load(WolvyVideo(videoId: 'vid', accountId: 42, viewerToken: 'old', tokenProvider: (v) async {
         seen.add(v.videoId);
@@ -131,26 +148,24 @@ void main() {
     });
 
     test('a failing token provider reaches the native side as an error', () async {
-      final c = WolvyPlayerController()..attachView(7);
+      final c = WolvyPlayerController();
       await c.load(WolvyVideo(videoId: 'vid', accountId: 42, viewerToken: 'old', tokenProvider: (_) async => throw StateError('server down')));
       await expectLater(fromNative('fetchViewerToken', {'videoId': 'vid'}), throwsA(isA<PlatformException>()));
     });
 
-    test('after dispose every call is destroyed', () async {
-      final c = WolvyPlayerController()..attachView(7);
+    test('dispose releases the native player, then every call is destroyed', () async {
+      final c = WolvyPlayerController();
+      await c.play();
       await c.dispose();
+      expect(pluginCalls.last.method, 'dispose');
+      expect(pluginCalls.last.arguments, {'playerId': 7});
       await expectLater(c.play(), throwsA(isA<WolvyError>().having((e) => e.code, 'code', WolvyErrorCode.destroyed)));
     });
 
-    test('a removed view makes waiting calls wait for the next one', () async {
-      final c = WolvyPlayerController()..attachView(7);
-      c.detachView(7);
-      final pending = c.play();
-      await Future<void>.delayed(Duration.zero);
-      expect(calls, isEmpty);
-      c.attachView(7);
-      await pending;
-      expect(calls.single.method, 'play');
+    test('dispose before any use creates nothing', () async {
+      final c = WolvyPlayerController();
+      await c.dispose();
+      expect(pluginCalls, isEmpty);
     });
   });
 

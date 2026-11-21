@@ -16,13 +16,17 @@ import 'models.dart';
 /// await player.load(WolvyVideo(videoId: id, accountId: 42, viewerToken: tokenFromYourServer));
 /// ```
 ///
-/// Commands sent before the view exists wait for it. Methods throw [WolvyError] with the web
-/// Player API's codes.
+/// The controller owns the native player: a [WolvyPlayerView] only shows it, so the video goes
+/// on when the view is rebuilt elsewhere (fullscreen, any change of layout). Nothing plays until
+/// a view is on screen (it confirms screen protection). Call [dispose] when you are done.
+/// Methods throw [WolvyError] with the web Player API's codes.
 class WolvyPlayerController {
   WolvyPlayerController();
 
+  static const MethodChannel _plugin = MethodChannel('net.wolvy.player');
+
   final StreamController<WolvyEvent> _events = StreamController<WolvyEvent>.broadcast();
-  Completer<void> _attached = Completer<void>();
+  Future<int>? _playerId;
   MethodChannel? _channel;
   WolvyVideo? _video;
   bool _disposed = false;
@@ -30,7 +34,7 @@ class WolvyPlayerController {
   /// Player events. A broadcast stream: listen as many times as you like.
   Stream<WolvyEvent> get events => _events.stream;
 
-  /// Loads [video] (the view must be in the tree, or the call waits for it).
+  /// Loads [video]. It starts playing once a [WolvyPlayerView] shows this controller.
   Future<void> load(WolvyVideo video, {bool autoplay = true}) async {
     _video = video;
     await _invoke('load', {
@@ -77,31 +81,33 @@ class WolvyPlayerController {
     return m == null ? null : WolvyVideoInfo.fromMap(m as Map);
   }
 
-  /// Closes [events]. The native player is released when the [WolvyPlayerView] leaves the tree.
+  /// Releases the native player and closes [events]. Remove the [WolvyPlayerView] first.
   Future<void> dispose() async {
+    if (_disposed) return;
     _disposed = true;
     _channel?.setMethodCallHandler(null);
     _channel = null;
+    final id = _playerId;
+    if (id != null) {
+      try {
+        await _plugin.invokeMethod<void>('dispose', {'playerId': await id});
+      } catch (_) {
+        // The engine is going away: the plugin releases every player then.
+      }
+    }
     await _events.close();
   }
 
-  // ---- for WolvyPlayerView ------------------------------------------------------------------
+  /// The native player's id, created on first use. For [WolvyPlayerView].
+  Future<int> get playerId => _playerId ??= _create();
 
-  /// Called by the view once its native player exists.
-  void attachView(int viewId) {
-    if (_disposed) return;
-    final channel = MethodChannel('net.wolvy.player/view_$viewId');
+  Future<int> _create() async {
+    final id = await _plugin.invokeMethod<int>('create');
+    if (id == null) throw const WolvyError(WolvyErrorCode.failed, 'The native player could not be created.');
+    final channel = MethodChannel('net.wolvy.player/player_$id');
     channel.setMethodCallHandler(_fromNative);
     _channel = channel;
-    if (!_attached.isCompleted) _attached.complete();
-  }
-
-  /// Called by the view when it leaves the tree.
-  void detachView(int viewId) {
-    if (_channel?.name != 'net.wolvy.player/view_$viewId') return;
-    _channel?.setMethodCallHandler(null);
-    _channel = null;
-    _attached = Completer<void>();
+    return id;
   }
 
   Future<Object?> _fromNative(MethodCall call) async {
@@ -123,9 +129,11 @@ class WolvyPlayerController {
 
   Future<Object?> _invoke(String method, [Map<String, Object?>? args]) async {
     if (_disposed) throw const WolvyError(WolvyErrorCode.destroyed, 'dispose() was called on this controller.');
-    await _attached.future;
+    await playerId;
     final channel = _channel;
-    if (channel == null) throw const WolvyError(WolvyErrorCode.destroyed, 'The player view was removed.');
+    if (channel == null || _disposed) {
+      throw const WolvyError(WolvyErrorCode.destroyed, 'dispose() was called on this controller.');
+    }
     try {
       return await channel.invokeMethod<Object?>(method, args);
     } on PlatformException catch (e) {

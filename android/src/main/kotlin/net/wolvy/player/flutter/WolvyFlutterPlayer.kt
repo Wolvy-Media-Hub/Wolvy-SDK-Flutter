@@ -3,11 +3,9 @@ package net.wolvy.player.flutter
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
-import android.view.View
 import io.flutter.plugin.common.BinaryMessenger
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
-import io.flutter.plugin.platform.PlatformView
 import net.wolvy.player.AppRenderVideoSource
 import net.wolvy.player.BuildConfig as CoreBuildConfig
 import net.wolvy.player.Progress
@@ -17,7 +15,6 @@ import net.wolvy.player.ViewerTokenProvider
 import net.wolvy.player.WolvyError
 import net.wolvy.player.WolvyPlayer
 import net.wolvy.player.WolvyPlayerListener
-import net.wolvy.player.WolvyPlayerView
 import net.wolvy.player.WolvyVideo
 import java.io.IOException
 import java.util.concurrent.CountDownLatch
@@ -25,30 +22,25 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
 
 /**
- * One Flutter WolvyPlayerView: a native WolvyPlayer and WolvyPlayerView from the Wolvy Android
- * SDK, driven over the `net.wolvy.player/view_<id>` channel. No playback logic here: commands go
- * to the core, events and token requests come back.
+ * One Dart WolvyPlayerController: a WolvyPlayer from the Wolvy Android SDK, driven over the
+ * `net.wolvy.player/player_<id>` channel. No playback logic here: commands go to the core, events
+ * and token requests come back. The views that show it come and go (WolvyViewFactory).
  */
-internal class WolvyFlutterView(
+internal class WolvyFlutterPlayer(
     context: Context,
     messenger: BinaryMessenger,
-    viewId: Int,
-    showControls: Boolean,
-) : PlatformView, MethodChannel.MethodCallHandler {
+    playerId: Int,
+) : MethodChannel.MethodCallHandler {
 
     private val main = Handler(Looper.getMainLooper())
-    private val channel = MethodChannel(messenger, "net.wolvy.player/view_$viewId")
-    private val player = WolvyPlayer(
+    private val channel = MethodChannel(messenger, "net.wolvy.player/player_$playerId")
+    val player = WolvyPlayer(
         context,
         AppRenderVideoSource(
             context.packageName,
             "wolvy-flutter/${WolvyPlayerPlugin.VERSION}+android.${CoreBuildConfig.SDK_VERSION}",
         ),
     )
-    private val view = WolvyPlayerView(context).also {
-        it.player = player
-        it.showControls = showControls
-    }
     @Volatile private var disposed = false
 
     /** Asks Dart for a fresh viewer token; runs on the player's background thread. */
@@ -56,7 +48,7 @@ internal class WolvyFlutterView(
         val answer = AtomicReference<Result<String?>>()
         val done = CountDownLatch(1)
         main.post {
-            if (disposed) { answer.set(Result.failure(IOException("The view was removed."))); done.countDown(); return@post }
+            if (disposed) { answer.set(Result.failure(IOException("The player was disposed."))); done.countDown(); return@post }
             channel.invokeMethod("fetchViewerToken", mapOf("videoId" to video.videoId), object : MethodChannel.Result {
                 override fun success(result: Any?) { answer.set(Result.success(result as? String)); done.countDown() }
                 override fun error(code: String, message: String?, details: Any?) {
@@ -93,12 +85,10 @@ internal class WolvyFlutterView(
         player.addListener(events)
     }
 
-    override fun getView(): View = view
-
-    override fun dispose() {
+    fun release() {
+        if (disposed) return
         disposed = true
         channel.setMethodCallHandler(null)
-        view.player = null
         player.release()
     }
 
