@@ -4,7 +4,7 @@
 #
 Pod::Spec.new do |s|
   s.name             = 'wolvy_player'
-  s.version          = '0.2.0'
+  s.version          = '0.3.0'
   s.summary          = "Plays Wolvy's DRM-protected video in Flutter apps (FairPlay on iOS)."
   s.description      = <<-DESC
 The iOS side of the wolvy_player Flutter package: the Wolvy iOS SDK (AVPlayer and FairPlay) behind

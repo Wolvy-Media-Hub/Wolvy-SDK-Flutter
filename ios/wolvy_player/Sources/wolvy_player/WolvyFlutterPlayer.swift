@@ -140,7 +140,7 @@ final class WolvyFlutterPlayer: WolvyPlayerListener {
 
     static func map(_ s: WolvyState) -> [String: Any] {
         ["currentTime": s.currentTime, "duration": s.duration, "paused": s.paused,
-         "muted": s.muted, "volume": Double(s.volume), "playbackRate": Double(s.playbackRate)]
+         "muted": s.muted, "volume": Double(s.volume), "playbackRate": Double(s.playbackRate), "attested": s.attested]
     }
 
     static func map(_ q: WolvyQualities) -> [String: Any] {

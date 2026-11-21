@@ -36,8 +36,9 @@ internal class WolvyFlutterPlayer(
     private val channel = MethodChannel(messenger, "net.wolvy.player/player_$playerId")
     val player = WolvyPlayer(
         context,
+        // Built from the context, so the app proves itself (app protection) when the account set it up.
         AppRenderVideoSource(
-            context.packageName,
+            context,
             "wolvy-flutter/${WolvyPlayerPlugin.VERSION}+android.${CoreBuildConfig.SDK_VERSION}",
         ),
     )
@@ -147,6 +148,7 @@ internal class WolvyFlutterPlayer(
     private fun State.toMap() = mapOf(
         "currentTime" to currentTime, "duration" to duration, "paused" to paused,
         "muted" to muted, "volume" to volume.toDouble(), "playbackRate" to playbackRate.toDouble(),
+        "attested" to attested,
     )
     private fun Qualities.toMap() = mapOf("available" to available, "selected" to selected, "playing" to playing)
     private fun Progress.toMap() = mapOf("percent" to percent, "seconds" to seconds, "duration" to duration)
