@@ -4,9 +4,6 @@ version: 0.1.0
 homepage: https://docs.wolvy.net/
 repository: https://github.com/Wolvy-Media-Hub/Wolvy-SDK-Flutter
 issue_tracker: https://github.com/Wolvy-Media-Hub/Wolvy-SDK-Flutter/issues
-# Until the first release on pub.dev (publisher wolvy.net).
-publish_to: none
-
 environment:
   sdk: ^3.5.0
   flutter: '>=3.24.0'

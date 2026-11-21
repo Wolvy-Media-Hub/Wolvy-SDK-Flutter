@@ -1,0 +1,46 @@
+.DS_Store
+.idea/
+*.iml
+build/
+.gradle/
+local.properties
+node_modules/
+.dart_tool/
+.flutter-plugins*
+Pods/
+DerivedData/
+*.keystore
+*.jks
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+.atom/
+.build/
+.buildlog/
+.history
+.svn/
+.swiftpm/
+migrate_working_dir/
+
+# IntelliJ related
+*.ipr
+*.iws
+# The .vscode folder contains launch configuration and tasks you configure in
+# VS Code which you may wish to be included in version control, so this line
+# is commented out by default.
+#.vscode/
+# Flutter/Dart/Pub related
+# Libraries should not include pubspec.lock, per https://dart.dev/guides/libraries/private-files#pubspeclock.
+/pubspec.lock
+**/doc/api/
+.flutter-plugins-dependencies
+/build/
+/coverage/
+
+# Not in the published package (pub reads .pubignore instead of .gitignore here)
+spike/
+.github/
+example/build/
+example/android/.gradle/
