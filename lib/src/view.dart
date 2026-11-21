@@ -12,11 +12,13 @@ import 'controller.dart';
 /// The player belongs to the controller, not to this widget: when Flutter rebuilds the widget in
 /// another place (fullscreen, any change of layout), playback goes on in the new one.
 ///
-/// Embedded with hybrid composition, the only way a hardware-protected (Widevine L1) picture
-/// can be shown in Flutter: the texture layer draws native views into a texture, and a secure
-/// surface cannot be drawn there (tested on phones, SDK plan phase 3 step 1).
+/// Android: embedded with hybrid composition, the only way a hardware-protected (Widevine L1)
+/// picture can be shown in Flutter: the texture layer draws native views into a texture, and a
+/// secure surface cannot be drawn there (tested on phones, SDK plan phase 3 step 1). While it is
+/// on screen the app's whole window is protected from capture (FLAG_SECURE).
 ///
-/// While it is on screen the app's whole window is protected from capture (FLAG_SECURE).
+/// iOS: a UIKit view (FairPlay). iOS keeps the picture out of screenshots, recordings and
+/// mirroring by itself. The view takes every touch in its area (its own controls).
 class WolvyPlayerView extends StatefulWidget {
   const WolvyPlayerView({super.key, required this.controller, this.showControls = true});
 
@@ -42,14 +44,27 @@ class _WolvyPlayerViewState extends State<WolvyPlayerView> {
 
   @override
   Widget build(BuildContext context) {
-    if (defaultTargetPlatform != TargetPlatform.android) {
-      return const Center(child: Text('The Wolvy player runs on Android in this version.'));
+    final platform = defaultTargetPlatform;
+    if (platform != TargetPlatform.android && platform != TargetPlatform.iOS) {
+      return const Center(child: Text('The Wolvy player runs on Android and iOS.'));
     }
     return FutureBuilder<int>(
       future: _playerId,
       builder: (context, snapshot) {
         final id = snapshot.data;
         if (id == null) return const ColoredBox(color: Color(0xFF000000));
+        if (platform == TargetPlatform.iOS) {
+          return UiKitView(
+            key: ValueKey<int>(id),
+            viewType: WolvyPlayerView.viewType,
+            layoutDirection: Directionality.maybeOf(context) ?? TextDirection.ltr,
+            creationParams: <String, Object?>{'playerId': id, 'showControls': widget.showControls},
+            creationParamsCodec: const StandardMessageCodec(),
+            gestureRecognizers: <Factory<OneSequenceGestureRecognizer>>{
+              Factory<OneSequenceGestureRecognizer>(() => EagerGestureRecognizer()),
+            },
+          );
+        }
         return PlatformViewLink(
           key: ValueKey<int>(id),
           viewType: WolvyPlayerView.viewType,
